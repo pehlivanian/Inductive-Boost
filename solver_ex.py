@@ -4,8 +4,8 @@ import proto
 
 rng = np.random.RandomState(136)
 
-num_partitions = 2
-n = 55
+num_partitions = 10
+n = 500
 objective_fn = 1                    # 1 ~ Poisson, 2 ~ Gaussian
 risk_partitioning_objective = False # False => multiple clustering score function is used
 optimized_score_calculation = False # Leave this False; only implemented for RationalScore case

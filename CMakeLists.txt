@@ -8,6 +8,7 @@ project(inductiveboost)
 # Toggle compiler support: C++11...C++17
 option(USE_C++17 "Use C++17 compliant compiler, default is C++11" OFF)
 option(USE_C++14 "Use C++14 compliant compiler, default is C++!1" OFF)
+option(GTEST "Compile google tests, default is OFF" OFF)
 
 if(CMAKE_CXX_COMPILER_LOADED)
   message(STATUS "The C++ compiler ID is: ${CMAKE_CXX_COMPILER_ID}")
@@ -47,6 +48,9 @@ endif()
 find_package(SWIG REQUIRED)
 find_package(PythonInterp REQUIRED)
 find_package(PythonLibs REQUIRED)
+if (GTEST)
+  find_package(GTest REQUIRED)
+endif()
 
 include(UseSWIG)
 
@@ -67,6 +71,12 @@ include_directories(${PYTHON_INCLUDE_PATH})
 
 add_library(DP OBJECT DP.cpp)
 add_library(LTSS OBJECT LTSS.cpp)
+
+if (GTEST)
+  add_executable(gtest_all gtest_all.cpp)
+  target_link_libraries(gtest_all DP ${GTEST_LIBRARIES} pthread)
+  include_directories(${GTEST_INCLUDE_DIRS})
+endif()
 
 target_link_libraries(DP LTSS)
 

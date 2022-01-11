@@ -13,7 +13,7 @@ import utils
 from optimalsplitboost import OptimalSplitGradientBoostingClassifier
 
 TEST_SIZE = 0.20
-FILENAME = './summary.csv'
+FILENAME = './summary_3.csv'
 USE_SIMULATED_DATA = False
 
 ########################
@@ -31,7 +31,7 @@ if False:
 else:
     class_datasets = {'analcatdata_lawsuit', 'analcatdata_boxing2', 'heart_c', 'agaricus_lepiota', 'horse_colic', 'australian', 'flare', 'phoneme', 'breast_cancer_wisconsin', 'analcatdata_creditscore', 'clean1', 'monk2', 'analcatdata_aids', 'analcatdata_bankruptcy', 'churn', 'hypothyroid', 'lupus', 'GAMETES_Epistasis_2_Way_20atts_0.1H_EDM_1_1', 'labor', 'analcatdata_boxing1', 'xd6', 'Hill_Valley_without_noise', 'corral', 'adult', 'molecular_biology_promoters', 'twonorm', 'breast_w', 'bupa', 'diabetes', 'chess', 'german', 'mux6', 'backache', 'tokyo1', 'ionosphere', 'prnn_crabs', 'monk3', 'mofn_3_7_10', 'threeOf9', 'ring', 'spect', 'biomed', 'colic', 'sonar', 'hepatitis', 'cleve', 'monk1', 'irish', 'parity5+5', 'coil2000', 'magic', 'breast_cancer', 'analcatdata_cyyoung8092', 'GAMETES_Epistasis_3_Way_20atts_0.2H_EDM_1_1', 'GAMETES_Epistasis_2_Way_1000atts_0.4H_EDM_1_EDM_1_1', 'postoperative_patient_data', 'crx', 'clean2', 'house_votes_84', 'dis', 'haberman', 'saheart', 'GAMETES_Epistasis_2_Way_20atts_0.4H_EDM_1_1', 'GAMETES_Heterogeneity_20atts_1600_Het_0.4_0.2_50_EDM_2_001', 'profb', 'analcatdata_fraud', 'tic_tac_toe', 'kr_vs_kp', 'credit_g', 'prnn_synth', 'credit_a', 'parity5', 'mushroom', 'breast', 'glass2', 'pima', 'analcatdata_asbestos', 'appendicitis', 'vote', 'analcatdata_japansolvent', 'heart_h', 'GAMETES_Heterogeneity_20atts_1600_Het_0.4_0.2_75_EDM_2_001', 'wdbc', 'buggyCrx', 'analcatdata_cyyoung9302', 'hungarian', 'spambase', 'spectf', 'heart_statlog', 'Hill_Valley_with_noise'}
 
-class_datasets = sorted(class_datasets, key=lambda x: x.upper())
+# class_datasets = sorted(class_datasets, key=lambda x: x.upper())
 
 already_read = set([])
 
@@ -61,17 +61,18 @@ for ind,dataset_name in enumerate(class_datasets):
         X,y = pmlb.fetch_data(dataset_name, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X,y, test_size=TEST_SIZE)    
 
-    # XXX
-    distiller = classifier.classifierFactory(sklearn.tree.DecisionTreeClassifier)
-    # distiller = classifier.classifierFactory(Stree)
-    num_steps = 250 # 250
-    part_ratio = .1 # .5
+    # Use classifier distiller
+    # distiller = classifier.classifierFactory(sklearn.tree.DecisionTreeClassifier)
+    distiller = classifier.classifierFactory(Stree)
+    
+    num_steps = 100 # 250
+    part_ratio = .85 # .5
     min_partition_size= 2
     max_partition_size = int(part_ratio*X_train.shape[0])
-    row_sample_ratio = 0.5 # 0.65
+    row_sample_ratio = 0.7 # 0.65
     col_sample_ratio = 1.0
-    gamma = 0.01
-    eta = 0.025
+    gamma = 0.00
+    eta = 0.000
     learning_rate = 0.10 # 0.15
     distiller = distiller
     use_closed_form_differentials = True

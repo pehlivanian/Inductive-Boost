@@ -410,10 +410,9 @@ class OptimalSplitGradientBoostingClassifier(object):
                 min_val = -1 * np.sum(g[s])/(np.sum(h[s]) + self.gamma)
                 MAX_VAL = 0.9
                 MIN_VAL = 0.1
-                
+
                 # XXX
-                # impliedSolverKwargs = dict(max_depth=max([int(len(s)/2), 2]))
-                # impliedSolverKwargs = dict(max_depth=int(np.log2(num_partitions)))
+                # Can we do better here?
                 impliedSolverKwargs = dict(max_depth=None)
 
                 # bounded

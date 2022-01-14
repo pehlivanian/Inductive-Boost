@@ -1,5 +1,6 @@
 import pmlb
 
+import os
 import logging
 import classifier
 import numpy as np
@@ -33,7 +34,11 @@ else:
 
 # class_datasets = sorted(class_datasets, key=lambda x: x.upper())
 
-already_read = set([])
+if os.path.exists(FILENAME):
+    df = pd.read_csv(FILENAME)
+    already_read = set(df['dataset'].values)
+else:    
+    already_read = set([])
 
 # Exceptions
 carve_out = set(('adult','agaricus_lepiota', 'churn', 'clean1', 'clean2', 'coil2000', 'magic', 'postoperative_patient_data', 'ring'))
@@ -61,12 +66,13 @@ for ind,dataset_name in enumerate(class_datasets):
         X,y = pmlb.fetch_data(dataset_name, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X,y, test_size=TEST_SIZE)    
 
+
     # Use classifier distiller
     # distiller = classifier.classifierFactory(sklearn.tree.DecisionTreeClassifier)
     distiller = classifier.classifierFactory(Stree)
     
     num_steps = 100 # 250
-    part_ratio = .85 # .5
+    part_ratio = .5 # .5
     min_partition_size= 2
     max_partition_size = int(part_ratio*X_train.shape[0])
     row_sample_ratio = 0.7 # 0.65

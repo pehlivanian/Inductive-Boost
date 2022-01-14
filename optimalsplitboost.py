@@ -76,6 +76,7 @@ class OptimalSplitGradientBoostingClassifier(object):
         self.use_constant_term = use_constant_term
         self.solver_type = solver_type
         self.learning_rate = learning_rate
+        self.learning_rate_static = learning_rate
         self.distiller = distiller
         self.use_closed_form_differentials = use_closed_form_differentials
         self.risk_partitioning_objective = risk_partitioning_objective
@@ -276,7 +277,7 @@ class OptimalSplitGradientBoostingClassifier(object):
                                                                   leaf_values))()))
         # Iterative boosting
         for i in range(1,num_steps):
-            self.fit_step()
+            self.fit_step(i, num_steps)
             leaf_values = self.leaf_values.get_value()[-1+self.curr_classifier,:]
             print('STEP {}: LOSS: {:4.6f}'.format(i,
                                                   theano.function([],
@@ -496,7 +497,7 @@ class OptimalSplitGradientBoostingClassifier(object):
         finally:
             pass
         
-    def fit_step(self):
+    def fit_step(self, step_num, num_steps):
 
         self.X_all = self.X
         self.y_all = self.y
@@ -512,10 +513,33 @@ class OptimalSplitGradientBoostingClassifier(object):
                 g, h, c = self.generate_coefficients(constantTerm=self.use_constant_term,
                                                      row_mask=self.row_mask)
                 logging.info('generated coefficients')
-            
+
+                # ADJUST num_partitions
+                # 1
                 # SWIG optimizer, task-based C++ distribution
-                num_partitions = max(1, int(rng.choice(range(max(self.min_partition_size, self.max_partition_size)))))
-        
+                # choose random num_partitions in [min_partition_size, max_partition_size]
+                # num_partitions = max(1, int(rng.choice(range(max(self.min_partition_size, self.max_partition_size)))))
+                # 2
+                # exponentially decaying num_partitions from self.N to 1
+                # A = self.N
+                # B = np.log(self.N)/num_steps
+                # num_partitions = max(1, int(A * np.exp(-B * (-1 + step_num))))
+                # exponentially increasing num_partitions from 1 to self.N
+                A = 1
+                B = np.log(self.N)/num_steps
+                num_partitions = max(1, int(A * np.exp(B * (-1 + step_num))))
+
+                # ADJUST learning rate
+                # exponentially decreasing learning_rate from learning_rate to .5 * learning_rate
+                # A = self.learning_rate_static
+                # B = -np.log(.5)/num_steps
+                # self.learning_rate = A * np.exp(-B * (-1 + step_num))
+                # exponentially increasing learning_rate from learning_Rate to 2. * learning_rate
+                A = self.learning_rate_static
+                B = np.log(2)/num_steps
+                self.learning_rate = A * np.exp(B * (-1 + step_num))
+                # print('learning_rate: {}'.format(self.learning_rate))                
+
                 # Find best optimal split
                 best_leaf_values = self.find_best_optimal_split(g, h, num_partitions)
                 
@@ -583,10 +607,6 @@ class OptimalSplitGradientBoostingClassifier(object):
             return (g, h, c)        
 
         else:
-
-            def fn(x):
-                return x*(x-1)*(x-2)
-
             # Attempt at global approximation
             if False:
                 xaxis = np.arange(-1., 1.1, .1)
@@ -601,7 +621,7 @@ class OptimalSplitGradientBoostingClassifier(object):
                         len(np.unique(leaf_values)),
                         leaf_values
                         ))()) for xind in range(0,len(xaxis))]
-                    # cp = np.polynomial.Chebyshev.fit(xaxis, yaxis, 2)
+                    cp = np.polynomial.Chebyshev.fit(xaxis, yaxis, 2)
                     pf.append(np.polynomial.polynomial.polyfit(xaxis,yaxis,2))
                     print('ind: {}'.format(ind))
                     import pdb; pdb.set_trace()

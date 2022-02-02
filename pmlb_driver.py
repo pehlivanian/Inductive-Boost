@@ -9,13 +9,15 @@ import sklearn.tree
 import sklearn.svm
 import sklearn.discriminant_analysis
 from stree import Stree
+from sklearn_oblique_tree.oblique import ObliqueTree
 from sklearn.model_selection import train_test_split
 import utils
 from optimalsplitboost import OptimalSplitGradientBoostingClassifier
 
-TEST_SIZE = 0.20
-FILENAME = './summary_3.csv'
+TEST_SIZE = 0.20 # 0.20
+FILENAME = './summary_18.csv'
 USE_SIMULATED_DATA = False
+MIN_ROWS_FOR_TRAINING = 500
 
 ########################
 ## PMLB Dataset sizes ##
@@ -43,7 +45,25 @@ else:
 # Exceptions
 carve_out = set(('adult','agaricus_lepiota', 'churn', 'clean1', 'clean2', 'coil2000', 'magic', 'postoperative_patient_data', 'ring'))
 
-df = pd.DataFrame(columns=['dataset', 'row_ratio', 'col_ratio', 'part_ratio', 'learning_rate', 'numsteps', 'rat', 'features', 'classes', 'imbalance', 'igb_loss_IS', 'cbt_loss_IS', 'igb_acc_OS', 'cbt_acc_OS'])
+df = pd.DataFrame(columns=['dataset',
+                           'row_ratio',
+                           'col_ratio',
+                           'part_ratio',
+                           'learning_rate',
+                           'numsteps',
+                           'train_rows',
+                           'test_rows',
+                           'features',
+                           'classes',
+                           'imbalance',
+                           'igb_loss_IS',
+                           'cbt_loss_IS',
+                           'igb_acc_OS',
+                           'cbt_acc_OS',
+                           'igb_recall_OS',
+                           'cbt_recall_OS',
+                           'igb_prec_OS',
+                           'ctb_prec_OS'])
 
 for ind,dataset_name in enumerate(class_datasets):
 
@@ -66,20 +86,36 @@ for ind,dataset_name in enumerate(class_datasets):
         X,y = pmlb.fetch_data(dataset_name, return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X,y, test_size=TEST_SIZE)    
 
+    if X_train.shape[0] < MIN_ROWS_FOR_TRAINING:
+        print('Skipping dataset: {}; too small'.format(dataset_name))        
+        continue
+    
+    train_unique = np.unique(y_train)
+    test_unique = np.unique(y_test)
+    assert len(train_unique) == 2
+    assert len(test_unique) == 2
+    assert not (set(train_unique) | set(test_unique)) - (set(train_unique) & set(test_unique))
+    
+    mi,ma = np.min(y_train),np.max(y_train)
+    y_train = np.int64(1/(ma-mi))*(y_train - mi)
+    y_test = np.int64(1/(ma-mi))*(y_test - mi)
 
     # Use classifier distiller
-    # distiller = classifier.classifierFactory(sklearn.tree.DecisionTreeClassifier)
-    distiller = classifier.classifierFactory(Stree)
+    # distiller = classifier.classifierFactory(ObliqueTree)
+    distiller = classifier.classifierFactory(sklearn.tree.DecisionTreeClassifier,
+                                             criterion='entropy',
+                                             splitter='random')
+    # distiller = classifier.classifierFactory(Stree)
     
-    num_steps = 100 # 250
+    num_steps = 1200 # 250
     part_ratio = .5 # .5
     min_partition_size= 2
     max_partition_size = int(part_ratio*X_train.shape[0])
-    row_sample_ratio = 0.7 # 0.65
+    row_sample_ratio = 0.35 # 0.65
     col_sample_ratio = 1.0
     gamma = 0.00
     eta = 0.000
-    learning_rate = 0.10 # 0.15
+    learning_rate = 0.035  # 0.035 # 0.15 0.025
     distiller = distiller
     use_closed_form_differentials = True
 
@@ -110,9 +146,9 @@ for ind,dataset_name in enumerate(class_datasets):
                               catboost_verbose=False)
 
     all_stats = [dataset_name, row_sample_ratio, col_sample_ratio, part_ratio, learning_rate, num_steps,
-                 X_train.shape[0], X_train.shape[1], len(np.unique(y_train)),
+                 X_train.shape[0], X_test.shape[0], X_train.shape[1], len(np.unique(y_train)),
                  2.0*((sum(y_train==0)/len(y_train) - .5)**2 + (sum(y_train==1)/len(y_train) - .5)**2),
-                 stats[0], stats[1], stats[2], stats[3]]
+                 stats[0], stats[1], stats[2], stats[3], stats[4], stats[5], stats[6], stats[7]]
 
     df.loc[ind] = all_stats
     df.to_csv(FILENAME)

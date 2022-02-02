@@ -3,6 +3,7 @@ import importlib
 import numpy as np
 from catboost import CatBoostClassifier, Pool
 from stree import Stree
+from sklearn_oblique_tree.oblique import ObliqueTree
 import sklearn.base
 from sklearn.base import BaseEstimator, clone
 from sklearn.utils.metaestimators import if_delegate_has_method
@@ -89,6 +90,17 @@ class STreeImpliedTree(Stree):
         y_hat = T.as_tensor(y_hat0.reshape(-1,1)).astype(theano.config.floatX)
         return y_hat
 
+class ObliqueImpliedTree(ObliqueTree):
+    def __init__(self, X=None, y=None, max_depth=2):
+        super(ObliqueImpliedTree, self).__init__(random_state=random_state, number_restarts=100)
+
+        self.fit(X, y)
+
+    def predict(self, X):
+        y_hat0 = super(ObliqueImpliedTree, self).predict(X.get_value())
+        y_hat = T.as_tensor(y_hat0.reshape(-1,1)).astype(theano.config.floatX)
+        return y_hat
+    
 class LeafOnlyTree(object):
     def __init__(self, X=None, y=None):
         self.X = X

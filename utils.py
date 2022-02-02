@@ -221,7 +221,11 @@ def oos_summary(clf, X_train, y_train, X_test, y_test, learning_rate=1.,
     return (igb_loss_IS,
             cb_loss_IS,
             metrics.accuracy_score(y_hat_clf, y0),
-            metrics.accuracy_score(y_hat_cb, y0))
+            metrics.accuracy_score(y_hat_cb, y0),
+            metrics.recall_score(y_hat_clf, y0),
+            metrics.recall_score(y_hat_cb, y0),
+            metrics.precision_score(y_hat_clf, y0),
+            metrics.precision_score(y_hat_cb, y0))
     
     # target_names = ['0', '1']
     # conf = plot_confusion(metrics.confusion_matrix(y_hat_clf, y0), target_names)
